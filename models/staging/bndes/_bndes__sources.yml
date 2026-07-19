@@ -1,0 +1,12 @@
+version: 2
+# prestar atençãp pois posso precisar alterar  
+sources:
+  - name: bndes
+    database: safraviva-f1
+    schema: bronze_bndes
+    tables:
+      - name: operacoes_nao_automaticas
+        description: "Cópia bronze do BNDES via Base dos Dados"
+        loaded_at_field: data_contratacao
+        freshness:
+          warn_after: {count: 90, period: day}
