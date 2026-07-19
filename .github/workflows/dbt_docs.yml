@@ -1,0 +1,66 @@
+name: dbt docs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  pages: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install dbt-core==1.9.* dbt-bigquery==1.9.*
+
+      - name: Criar profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml <<'EOF'
+          bndes:
+            target: prod
+            outputs:
+              prod:
+                type: bigquery
+                method: oauth
+                project: safraviva-f1
+                dataset: prod
+                location: US
+                threads: 4
+          EOF
+
+      - run: dbt deps
+
+      - run: dbt docs generate --target prod
+
+      - name: Salvar artefatos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-artifacts
+          path: target/
+          retention-days: 7
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
