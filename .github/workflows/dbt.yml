@@ -1,0 +1,40 @@
+name: dbt build
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # segundas, 09:00 UTC (06:00 BRT)
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install dbt-core==1.9.* dbt-bigquery==1.9.*
+
+      - name: Configurar credenciais
+        run: |
+          mkdir -p ~/.dbt
+          echo '${{ secrets.GCP_SA_KEY }}' > ~/.dbt/key.json
+          cat > ~/.dbt/profiles.yml <<'EOF'
+          bndes:
+            target: prod
+            outputs:
+              prod:
+                type: bigquery
+                method: service-account
+                keyfile: /home/runner/.dbt/key.json
+                project: safraviva-f1
+                dataset: prod
+                location: US
+                threads: 4
+          EOF
+
+      - run: dbt deps
+      - run: dbt build --target prod
