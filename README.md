@@ -120,7 +120,7 @@ bndes:
       type: bigquery
       method: service-account
       keyfile: /caminho/para/key.json
-      project: safraviva-f1
+      project: 
       dataset: dbt_seu_nome
       location: US
       threads: 4
