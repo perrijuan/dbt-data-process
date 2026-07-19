@@ -38,18 +38,13 @@ jobs:
           EOF
 
       - run: dbt deps
+
       - run: dbt build --target prod
 
-      - name: Gerar docs
-        run: dbt docs generate --target prod
-
-      - uses: actions/configure-pages@v5
+      - name: Salvar artefatos
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          enablement: true
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
+          name: dbt-artifacts
           path: target/
-
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          retention-days: 7
