@@ -17,11 +17,17 @@ jobs:
           python-version: '3.11'
 
       - run: pip install dbt-core==1.9.* dbt-bigquery==1.9.*
-
       - name: Configurar credenciais
+        env:
+          SA_KEY_B64: ${{ secrets.GCP_SA_KEY_B64 }}
         run: |
+          if [ -z "$SA_KEY_B64" ]; then
+            echo "ERRO: secret GCP_SA_KEY_B64 vazio ou inexistente"
+            exit 1
+          fi
           mkdir -p ~/.dbt
-          echo '${{ secrets.GCP_SA_KEY }}' > ~/.dbt/key.json
+          echo "$SA_KEY_B64" | base64 -d > ~/.dbt/key.json
+          python -c "import json;d=json.load(open('$HOME/.dbt/key.json'));print('SA:',d['client_email'])"
           cat > ~/.dbt/profiles.yml <<'EOF'
           bndes:
             target: prod
@@ -36,5 +42,6 @@ jobs:
                 threads: 4
           EOF
 
+   
       - run: dbt deps
       - run: dbt build --target prod
