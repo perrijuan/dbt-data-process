@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: dim_cliente
+    columns:
+      - name: sk_cliente
+        tests: [unique, not_null]
+
+  - name: dim_municipio
+    columns:
+      - name: sk_municipio
+        tests: [unique, not_null]
+      - name: sigla_uf
+        tests:
+          - accepted_values:
+              values: ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT',
+                       'MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO',
+                       'RR','SC','SP','SE','TO','XX']
+
+  - name: dim_data
+    columns:
+      - name: sk_data
+        tests: [unique, not_null]
+
+  - name: fct_operacoes_contratadas
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "valor_desembolsado <= valor_contratado * 1.01"
+    columns:
+      - name: id_contrato
+        tests: [not_null]
+      - name: sk_cliente
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_cliente')
+              field: sk_cliente
+      - name: sk_municipio
+        tests:
+          - relationships:
+              to: ref('dim_municipio')
+              field: sk_municipio
+      - name: sk_data
+        tests:
+          - relationships:
+              to: ref('dim_data')
+              field: sk_data
+      - name: valor_contratado
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
