@@ -3,18 +3,9 @@ name: dbt docs
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-  id-token: write
-  pages: write
-
 jobs:
   docs:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -48,19 +39,9 @@ jobs:
 
       - run: dbt docs generate --target prod
 
-      - name: Salvar artefatos
-        if: always()
+      - name: Salvar documentação
         uses: actions/upload-artifact@v4
         with:
-          name: dbt-artifacts
+          name: dbt-docs
           path: target/
-          retention-days: 7
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: target/
-
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          retention-days: 30
