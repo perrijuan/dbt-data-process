@@ -39,3 +39,22 @@ jobs:
 
       - run: dbt deps
       - run: dbt build --target prod
+      - name: Salvar artefatos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-artifacts
+          path: target/
+          retention-days: 7
+
+      - name: Gerar docs
+        run: dbt docs generate --target prod
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
