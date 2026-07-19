@@ -2,9 +2,7 @@ name: dbt build
 
 on:
   schedule:
-    - cron: '0 9 * * 1'   # segundas, 09:00 UTC (06:00 BRT)
-  push:
-    branches: [main]
+    - cron: '0 9 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -12,36 +10,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - run: pip install dbt-core==1.9.* dbt-bigquery==1.9.*
-      - name: Configurar credenciais
-        env:
-          SA_KEY_B64: ${{ secrets.GCP_SA_KEY_B64 }}
+
+      - name: Criar profiles.yml
         run: |
-          if [ -z "$SA_KEY_B64" ]; then
-            echo "ERRO: secret GCP_SA_KEY_B64 vazio ou inexistente"
-            exit 1
-          fi
           mkdir -p ~/.dbt
-          echo "$SA_KEY_B64" | base64 -d > ~/.dbt/key.json
-          python -c "import json;d=json.load(open('$HOME/.dbt/key.json'));print('SA:',d['client_email'])"
           cat > ~/.dbt/profiles.yml <<'EOF'
           bndes:
             target: prod
             outputs:
               prod:
                 type: bigquery
-                method: service-account
-                keyfile: /home/runner/.dbt/key.json
+                method: oauth
                 project: safraviva-f1
                 dataset: prod
                 location: US
                 threads: 4
           EOF
 
-   
       - run: dbt deps
       - run: dbt build --target prod
